@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>寵物吃喝玩樂清單</title>
+<style>
+  body { font-family: -apple-system, "Noto Sans TC", Arial, sans-serif; margin:0; background:#f5f5f5; color:#333; }
+  header { background:#3a7d44; color:#fff; padding:14px 16px; position:sticky; top:0; z-index:10; }
+  header h1 { margin:0; font-size:18px; }
+  header p { margin:4px 0 0; font-size:12px; opacity:.9; }
+  .toolbar { display:flex; gap:8px; padding:10px 12px; background:#fff; border-bottom:1px solid #ddd; position:sticky; top:56px; z-index:9; flex-wrap:wrap; }
+  .toolbar input[type=text], .toolbar select { flex:1; min-width:120px; padding:8px; border:1px solid #ccc; border-radius:6px; font-size:14px; }
+  .toolbar button { padding:8px 12px; border:1px solid #ccc; border-radius:6px; background:#fff; font-size:13px; }
+  .stats { padding:6px 12px; font-size:12px; color:#666; background:#fff; }
+  .county-group { margin:10px 8px; }
+  .county-title { font-size:15px; font-weight:700; color:#3a7d44; padding:6px 4px; border-bottom:2px solid #3a7d44; }
+  ul.list { list-style:none; margin:0; padding:0; }
+  li.item { background:#fff; border-radius:10px; margin:8px 0; padding:12px; box-shadow:0 1px 2px rgba(0,0,0,.08); }
+  .name { font-weight:600; font-size:15px; line-height:1.4; }
+  .meta { font-size:12px; color:#777; margin-top:4px; }
+  .rating { color:#e8a30c; font-weight:600; }
+  .extra { font-size:12px; color:#444; margin-top:6px; line-height:1.6; }
+  .extra b { color:#3a7d44; }
+  .addr { font-size:12px; color:#999; margin-top:4px; }
+  a.maplink { color:#3a7d44; text-decoration:none; font-size:12px; }
+  #loading { padding:40px; text-align:center; color:#999; }
+</style>
+</head>
+<body>
+<header>
+  <h1>🐾 寵物吃喝玩樂清單</h1>
+  <p>資料來自 Google Sheet，重新整理頁面即可看到最新內容</p>
+</header>
+<div class="toolbar">
+  <input type="text" id="search" placeholder="搜尋店名...">
+  <select id="countyFilter"><option value="">全部縣市</option></select>
+</div>
+<div class="stats" id="stats"></div>
+<div id="loading">載入中...</div>
+<div id="content"></div>
+
+<script>
+// ===== 設定區：請填入您的 Google Sheet ID 與分頁名稱 =====
+const SHEET_ID = '1lFxQwWu78M1hA5CfM4rs1AUIl70hneHm0RvfSNmg6UE';
+const SHEET_NAME = ''; // 留空表示第一個分頁，或填入分頁名稱例如 '工作表1'
+// =========================================================
+
+const gid = SHEET_NAME ? '&sheet=' + encodeURIComponent(SHEET_NAME) : '';
+const URL_GVIZ = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json${gid}`;
+
+let allRows = [];
+
+function escapeHtml(s){
+  return (s||'').toString().replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+fetch(URL_GVIZ)
+  .then(r => r.text())
+  .then(text => {
+    // gviz 回傳格式為 google.visualization.Query.setResponse(...) 包裹的 JSON
+    const json = JSON.parse(text.substring(47).slice(0, -2));
+    const cols = json.table.cols.map(c => c.label || c.id);
+    const rows = json.table.rows.map(r => {
+      const obj = {};
+      cols.forEach((c, i) => {
+        const cell = r.c[i];
+        obj[c] = cell ? (cell.f !== undefined ? cell.f : cell.v) : '';
+      });
+      return obj;
+    });
+    allRows = rows;
+    populateCountyFilter(rows);
+    render();
+    document.getElementById('loading').style.display = 'none';
+  })
+  .catch(err => {
+    document.getElementById('loading').textContent = '載入失敗，請確認 Sheet 已分享為「知道連結的人可檢視」，且 SHEET_ID 設定正確。錯誤：' + err;
+  });
+
+function populateCountyFilter(rows){
+  const counties = [...new Set(rows.map(r => r['縣市']).filter(Boolean))];
+  const sel = document.getElementById('countyFilter');
+  counties.sort().forEach(c => {
+    const opt = document.createElement('option');
+    opt.value = c;
+    opt.textContent = c;
+    sel.appendChild(opt);
+  });
+}
+
+function render(){
+  const q = document.getElementById('search').value.trim().toLowerCase();
+  const countyFilter = document.getElementById('countyFilter').value;
+  const content = document.getElementById('content');
+  content.innerHTML = '';
+
+  let filtered = allRows.filter(r => {
+    if (q && !(r['店名']||'').toLowerCase().includes(q)) return false;
+    if (countyFilter && r['縣市'] !== countyFilter) return false;
+    return true;
+  });
+
+  // 依縣市分組
+  const groups = {};
+  filtered.forEach(r => {
+    const county = r['縣市'] || '未分類';
+    (groups[county] = groups[county] || []).push(r);
+  });
+
+  const sortedCounties = Object.keys(groups).sort();
+  sortedCounties.forEach(county => {
+    const groupDiv = document.createElement('div');
+    groupDiv.className = 'county-group';
+    groupDiv.innerHTML = `<div class="county-title">${escapeHtml(county)}（${groups[county].length}）</div>`;
+    const ul = document.createElement('ul');
+    ul.className = 'list';
+
+    groups[county].forEach(r => {
+      const li = document.createElement('li');
+      li.className = 'item';
+      const metaParts = [];
+      if (r['評分']) metaParts.push('<span class="rating">★ ' + escapeHtml(r['評分']) + '</span>');
+      if (r['價位']) metaParts.push(escapeHtml(r['價位']));
+      if (r['類別']) metaParts.push(escapeHtml(r['類別']));
+
+      const extraParts = [];
+      if (r['造訪日期']) extraParts.push('<div><b>造訪日期：</b>' + escapeHtml(r['造訪日期']) + '</div>');
+      if (r['個人評價']) extraParts.push('<div><b>個人評價：</b>' + escapeHtml(r['個人評價']) + '</div>');
+      if (r['心得備註']) extraParts.push('<div><b>心得備註：</b>' + escapeHtml(r['心得備註']) + '</div>');
+      if (r['照片連結']) extraParts.push('<div><b>照片：</b><a class="maplink" href="' + escapeHtml(r['照片連結']) + '" target="_blank">查看照片</a></div>');
+
+      li.innerHTML = `
+        <div class="name">${escapeHtml(r['店名'])}</div>
+        <div class="meta">${metaParts.join(' · ')}</div>
+        ${r['地址'] ? '<div class="addr">' + escapeHtml(r['地址']) + '</div>' : ''}
+        ${r['Google Maps網址'] ? '<a class="maplink" href="' + escapeHtml(r['Google Maps網址']) + '" target="_blank">在 Google 地圖開啟</a>' : ''}
+        ${extraParts.length ? '<div class="extra">' + extraParts.join('') + '</div>' : ''}
+      `;
+      ul.appendChild(li);
+    });
+    groupDiv.appendChild(ul);
+    content.appendChild(groupDiv);
+  });
+
+  document.getElementById('stats').textContent = '共 ' + filtered.length + ' 個地點';
+}
+
+document.getElementById('search').addEventListener('input', render);
+document.getElementById('countyFilter').addEventListener('change', render);
+</script>
+</body>
+</html>
