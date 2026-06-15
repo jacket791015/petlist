@@ -51,6 +51,15 @@ const URL_GVIZ = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx
 
 let allRows = [];
 
+const COUNTY_ORDER = ['基隆市','台北市','新北市','桃園市','新竹市','新竹縣','苗栗縣','台中市','彰化縣',
+  '南投縣','雲林縣','嘉義市','嘉義縣','台南市','高雄市','屏東縣','宜蘭縣','花蓮縣','台東縣',
+  '澎湖縣','金門縣','連江縣'];
+
+function countyIndex(c){
+  const i = COUNTY_ORDER.indexOf(c);
+  return i === -1 ? COUNTY_ORDER.length : i;
+}
+
 function escapeHtml(s){
   return (s||'').toString().replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 }
@@ -58,7 +67,6 @@ function escapeHtml(s){
 fetch(URL_GVIZ)
   .then(r => r.text())
   .then(text => {
-    // gviz 回傳格式為 google.visualization.Query.setResponse(...) 包裹的 JSON
     const json = JSON.parse(text.substring(47).slice(0, -2));
     const cols = json.table.cols.map(c => c.label || c.id);
     const rows = json.table.rows.map(r => {
@@ -81,7 +89,7 @@ fetch(URL_GVIZ)
 function populateCountyFilter(rows){
   const counties = [...new Set(rows.map(r => r['縣市']).filter(Boolean))];
   const sel = document.getElementById('countyFilter');
-  counties.sort().forEach(c => {
+  counties.sort((a,b) => countyIndex(a) - countyIndex(b)).forEach(c => {
     const opt = document.createElement('option');
     opt.value = c;
     opt.textContent = c;
@@ -101,14 +109,13 @@ function render(){
     return true;
   });
 
-  // 依縣市分組
   const groups = {};
   filtered.forEach(r => {
     const county = r['縣市'] || '未分類';
     (groups[county] = groups[county] || []).push(r);
   });
 
-  const sortedCounties = Object.keys(groups).sort();
+  const sortedCounties = Object.keys(groups).sort((a,b) => countyIndex(a) - countyIndex(b));
   sortedCounties.forEach(county => {
     const groupDiv = document.createElement('div');
     groupDiv.className = 'county-group';
