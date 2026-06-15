@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="zh-Hant">
 <head>
@@ -34,6 +35,7 @@
 </header>
 <div class="toolbar">
   <input type="text" id="search" placeholder="搜尋店名...">
+  <input type="text" id="dateSearch" placeholder="搜尋造訪日期...">
   <select id="countyFilter"><option value="">全部縣市</option></select>
 </div>
 <div class="stats" id="stats"></div>
@@ -67,6 +69,7 @@ function escapeHtml(s){
 fetch(URL_GVIZ)
   .then(r => r.text())
   .then(text => {
+    // gviz 回傳格式為 google.visualization.Query.setResponse(...) 包裹的 JSON
     const json = JSON.parse(text.substring(47).slice(0, -2));
     const cols = json.table.cols.map(c => c.label || c.id);
     const rows = json.table.rows.map(r => {
@@ -99,16 +102,19 @@ function populateCountyFilter(rows){
 
 function render(){
   const q = document.getElementById('search').value.trim().toLowerCase();
+  const dateQ = document.getElementById('dateSearch').value.trim().toLowerCase();
   const countyFilter = document.getElementById('countyFilter').value;
   const content = document.getElementById('content');
   content.innerHTML = '';
 
   let filtered = allRows.filter(r => {
     if (q && !(r['店名']||'').toLowerCase().includes(q)) return false;
+    if (dateQ && !(r['造訪日期']||'').toString().toLowerCase().includes(dateQ)) return false;
     if (countyFilter && r['縣市'] !== countyFilter) return false;
     return true;
   });
 
+  // 依縣市分組
   const groups = {};
   filtered.forEach(r => {
     const county = r['縣市'] || '未分類';
@@ -154,6 +160,7 @@ function render(){
 }
 
 document.getElementById('search').addEventListener('input', render);
+document.getElementById('dateSearch').addEventListener('input', render);
 document.getElementById('countyFilter').addEventListener('change', render);
 </script>
 </body>
