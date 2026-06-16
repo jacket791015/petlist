@@ -36,6 +36,7 @@
 <div class="toolbar">
   <input type="text" id="search" placeholder="搜尋店名...">
   <input type="text" id="dateSearch" placeholder="搜尋造訪日期...">
+  <input type="text" id="noteSearch" placeholder="搜尋心得備註...">
   <select id="countyFilter"><option value="">全部縣市</option></select>
 </div>
 <div class="stats" id="stats"></div>
@@ -110,6 +111,8 @@ function render(){
   let filtered = allRows.filter(r => {
     if (q && !(r['店名']||'').toLowerCase().includes(q)) return false;
     if (dateQ && !(r['造訪日期']||'').toString().toLowerCase().includes(dateQ)) return false;
+    const noteQ = document.getElementById('noteSearch').value.trim().toLowerCase();
+    if (noteQ && !(r['心得備註']||'').toString().toLowerCase().includes(noteQ)) return false;
     if (countyFilter && r['縣市'] !== countyFilter) return false;
     return true;
   });
@@ -139,7 +142,6 @@ function render(){
 
       const extraParts = [];
       if (r['造訪日期']) extraParts.push('<div><b>造訪日期：</b>' + escapeHtml(r['造訪日期']) + '</div>');
-      if (r['個人評價']) extraParts.push('<div><b>個人評價：</b>' + escapeHtml(r['個人評價']) + '</div>');
       if (r['心得備註']) extraParts.push('<div><b>心得備註：</b>' + escapeHtml(r['心得備註']) + '</div>');
       if (r['照片連結']) extraParts.push('<div><b>照片：</b><a class="maplink" href="' + escapeHtml(r['照片連結']) + '" target="_blank">查看照片</a></div>');
 
@@ -161,6 +163,7 @@ function render(){
 
 document.getElementById('search').addEventListener('input', render);
 document.getElementById('dateSearch').addEventListener('input', render);
+document.getElementById('noteSearch').addEventListener('input', render);
 document.getElementById('countyFilter').addEventListener('change', render);
 </script>
 </body>
