@@ -45,12 +45,11 @@
 
 <script>
 // ===== 設定區：請填入您的 Google Sheet ID 與分頁名稱 =====
-const SHEET_ID = '1lFxQwWu78M1hA5CfM4rs1AUIl70hneHm0RvfSNmg6UE';
-const SHEET_NAME = ''; // 留空表示第一個分頁，或填入分頁名稱例如 '工作表1'
-// =========================================================
+const SHEET_ID = atob('MWxGeFF3V3U3OE0xaEE1Q2ZNNHJzMUFVSWw3MGhuZUhtMFJ2ZlNObWc2VUU=');
+const SHEET_NAME = '';
 
 const gid = SHEET_NAME ? '&sheet=' + encodeURIComponent(SHEET_NAME) : '';
-const URL_GVIZ = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json${gid}`;
+const URL_GVIZ = ['https://docs.google.com/spreadsheets/d/',SHEET_ID,'/gviz/tq?tqx=out:json',gid].join('');
 
 let allRows = [];
 
