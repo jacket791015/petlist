@@ -46,9 +46,35 @@
   #map { width: 100%; height: 100%; background: #dde5dd; }
   .map-panel { position: absolute; top: 164px; right: 12px; z-index: 20; width: min(320px, calc(100vw - 24px)); padding: 10px; border: 1px solid var(--line); border-radius: 8px; background: rgba(255,255,255,.96); box-shadow: 0 4px 18px rgba(0,0,0,.12); color: var(--muted); font-size: 12px; }
   .map-panel strong { display: block; margin-bottom: 4px; color: var(--text); font-size: 13px; }
+  .map-legend { display: flex; gap: 14px; margin: 8px 0; color: var(--text); }
+  .map-legend span { display: inline-flex; align-items: center; gap: 5px; }
+  .legend-dot { width: 11px; height: 11px; border: 2px solid #fff; border-radius: 50%; background: #2878c7; box-shadow: 0 0 0 1px rgba(0,0,0,.22); }
+  .legend-dot.visited { background: #e27619; }
   .map-panel button { width: 100%; margin-top: 8px; padding: 8px; border: 1px solid #cbd2cb; border-radius: 6px; background: #fff; color: var(--text); cursor: pointer; }
   .popup-name { margin-bottom: 4px; font-weight: 700; line-height: 1.35; }
   .popup-meta, .popup-addr { color: #58635b; font-size: 12px; line-height: 1.45; }
+  .popup-extra { margin-top: 6px; color: #3c463f; font-size: 12px; line-height: 1.55; }
+  .popup-extra b { color: var(--green); }
+  .pet-map-pin {
+    width: 22px;
+    height: 22px;
+    border: 3px solid #fff;
+    border-radius: 50% 50% 50% 0;
+    background: #2878c7;
+    box-shadow: 0 2px 5px rgba(0,0,0,.35);
+    transform: rotate(-45deg);
+  }
+  .pet-map-pin.visited { background: #e27619; }
+  .pet-map-pin::after {
+    content: "";
+    position: absolute;
+    width: 6px;
+    height: 6px;
+    top: 5px;
+    left: 5px;
+    border-radius: 50%;
+    background: #fff;
+  }
   .empty { padding: 40px 12px; text-align: center; color: var(--muted); }
   @media (max-width: 760px) {
     header { padding: 12px; }
@@ -89,6 +115,10 @@
   <div id="map"></div>
   <div class="map-panel" id="mapPanel">
     <strong>地圖模式</strong>
+    <div class="map-legend" aria-label="地圖標記圖例">
+      <span><i class="legend-dot visited"></i>已造訪</span>
+      <span><i class="legend-dot"></i>尚未造訪</span>
+    </div>
     <div id="mapStatus">切換到地圖後會依地址建立座標標記。</div>
     <button type="button" id="fitMapBtn">顯示目前篩選結果</button>
   </div>
@@ -288,7 +318,15 @@ function drawKnownMarkers() {
   filteredRows.forEach(row => {
     const cached = geocodeCache[cacheKeyForRow(row)];
     if (!cached || cached.error || cached.lat === undefined || cached.lng === undefined) return;
-    markerLayer.addLayer(L.marker([cached.lat, cached.lng]).bindPopup(createPopupHtml(row)));
+    const visited = Boolean((row[FIELD.visitDate] || '').toString().trim());
+    const icon = L.divIcon({
+      className: 'pet-marker-wrapper',
+      html: `<div class="pet-map-pin${visited ? ' visited' : ''}"></div>`,
+      iconSize: [28, 34],
+      iconAnchor: [14, 30],
+      popupAnchor: [0, -28]
+    });
+    markerLayer.addLayer(L.marker([cached.lat, cached.lng], { icon }).bindPopup(createPopupHtml(row)));
     plotted += 1;
   });
   updateGeoStats(plotted);
@@ -298,7 +336,17 @@ function drawKnownMarkers() {
 function createPopupHtml(row) {
   const meta = [row[FIELD.rating] ? `★ ${row[FIELD.rating]}` : '', row[FIELD.category], row[FIELD.price]].filter(Boolean).map(escapeHtml).join(' · ');
   const maps = row[FIELD.googleUrl] ? `<div><a class="maplink" href="${escapeHtml(row[FIELD.googleUrl])}" target="_blank" rel="noopener">開啟 Google Maps</a></div>` : '';
-  return `<div class="popup-name">${escapeHtml(row[FIELD.name])}</div><div class="popup-meta">${meta}</div><div class="popup-addr">${escapeHtml(row[FIELD.address] || '')}</div>${maps}`;
+  const extra = [];
+  if (row[FIELD.visitDate]) extra.push(`<div><b>造訪日期：</b>${escapeHtml(row[FIELD.visitDate])}</div>`);
+  if (row[FIELD.note]) extra.push(`<div><b>心得備註：</b>${escapeHtml(row[FIELD.note])}</div>`);
+  if (row[FIELD.photo]) extra.push(`<div><b>照片：</b><a class="maplink" href="${escapeHtml(row[FIELD.photo])}" target="_blank" rel="noopener">開啟照片</a></div>`);
+  return `
+    <div class="popup-name">${escapeHtml(row[FIELD.name])}</div>
+    <div class="popup-meta">${meta}</div>
+    <div class="popup-addr">${escapeHtml(row[FIELD.address] || '')}</div>
+    ${maps}
+    ${extra.length ? `<div class="popup-extra">${extra.join('')}</div>` : ''}
+  `;
 }
 
 function updateGeoStats(plotted) {
