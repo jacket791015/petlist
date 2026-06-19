@@ -28,6 +28,28 @@
   .mode-switch button:last-child { border-right: 0; }
   .mode-switch button.active { background: var(--green); color: #fff; }
   .stats { display: flex; justify-content: space-between; gap: 12px; padding: 7px 12px; font-size: 12px; color: var(--muted); background: var(--surface); border-bottom: 1px solid var(--line); }
+  .bumi-bar { display: flex; align-items: center; gap: 12px; padding: 9px 12px; background: #fff8ee; border-bottom: 1px solid #eadac6; }
+  .bumi-pick-button { display: inline-flex; align-items: center; gap: 9px; min-height: 48px; padding: 4px 13px 4px 5px; border: 1px solid #d8b98f; border-radius: 8px; background: #fff; color: #633f1f; font-weight: 700; cursor: pointer; box-shadow: 0 1px 2px rgba(73,44,19,.08); }
+  .bumi-pick-button:hover { background: #fffaf4; }
+  .bumi-pick-button:active { transform: translateY(1px); }
+  .bumi-pick-button img { width: 40px; height: 40px; border-radius: 6px; object-fit: cover; object-position: center 35%; }
+  .bumi-hint { color: #785d43; font-size: 12px; line-height: 1.45; }
+  .bumi-hint.is-error { color: #a23d2b; font-weight: 650; }
+  .bumi-modal[hidden] { display: none; }
+  .bumi-modal { position: fixed; inset: 0; z-index: 3000; display: grid; place-items: center; padding: 16px; background: rgba(28,34,29,.58); }
+  .bumi-dialog { position: relative; width: min(430px, 100%); overflow: hidden; border: 1px solid #e4d3bd; border-radius: 8px; background: #fffdf9; box-shadow: 0 18px 50px rgba(0,0,0,.25); }
+  .bumi-close { position: absolute; top: 8px; right: 8px; z-index: 2; width: 34px; height: 34px; border: 0; border-radius: 50%; background: rgba(255,255,255,.9); color: #493521; font-size: 22px; line-height: 1; cursor: pointer; }
+  .bumi-stage { position: relative; height: min(420px, 62vh); overflow: hidden; background: #efe4d3; }
+  .bumi-stage-video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; background: #efe4d3; }
+  .bumi-copy { padding: 16px 18px 18px; }
+  .bumi-copy h2 { margin: 0; font-size: 18px; color: #4f321b; }
+  .bumi-copy p { margin: 7px 0 0; color: #76634f; font-size: 13px; line-height: 1.55; }
+  .bumi-result { margin-top: 12px; padding-top: 12px; border-top: 1px solid #eadfce; }
+  .bumi-result-name { font-size: 18px; font-weight: 750; line-height: 1.4; color: var(--green); }
+  .bumi-result-meta, .bumi-result-address { margin-top: 5px; color: var(--muted); font-size: 12px; line-height: 1.5; }
+  .bumi-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
+  .bumi-actions button { min-height: 38px; padding: 0 12px; border: 1px solid #c7cec7; border-radius: 6px; background: #fff; color: var(--text); cursor: pointer; }
+  .bumi-actions button.primary { border-color: var(--green); background: var(--green); color: #fff; }
   #loading { padding: 40px; text-align: center; color: var(--muted); }
   #content { padding: 2px 8px 18px; }
   .county-group { margin: 10px 0; }
@@ -42,7 +64,7 @@
   .extra b { color: var(--green); }
   a.maplink { color: var(--green); text-decoration: none; font-size: 12px; font-weight: 600; }
   a.maplink:hover { text-decoration: underline; }
-  #mapShell { position: relative; display: none; height: calc(100vh - 149px); min-height: 460px; }
+  #mapShell { position: relative; display: none; height: calc(100vh - 216px); min-height: 460px; }
   #map { width: 100%; height: 100%; background: #dde5dd; }
   .map-panel { position: absolute; top: 12px; right: 12px; z-index: 1000; width: min(320px, calc(100vw - 24px)); padding: 10px; border: 1px solid var(--line); border-radius: 8px; background: rgba(255,255,255,.96); box-shadow: 0 4px 18px rgba(0,0,0,.12); color: var(--muted); font-size: 12px; }
   .map-panel strong { display: block; margin-bottom: 4px; color: var(--text); font-size: 13px; }
@@ -83,7 +105,10 @@
     .mode-switch { width: 100%; }
     .mode-switch button { flex: 1; }
     .stats { flex-direction: column; gap: 2px; }
-    #mapShell { height: calc(100vh - 232px); min-height: 420px; }
+    .bumi-bar { align-items: stretch; flex-direction: column; gap: 6px; }
+    .bumi-pick-button { width: 100%; justify-content: center; }
+    .bumi-stage { height: min(96vw, 410px); }
+    #mapShell { height: calc(100vh - 306px); min-height: 420px; }
     .map-panel { left: 56px; right: 8px; top: 8px; bottom: auto; width: auto; }
     .map-panel #mapStatus, .map-panel button { display: none; }
   }
@@ -110,6 +135,13 @@
   <span id="stats">讀取中...</span>
   <span id="geoStats"></span>
 </div>
+<div class="bumi-bar">
+  <button type="button" class="bumi-pick-button" id="bumiPickBtn" title="從選定縣市的未造訪地點中隨機選擇">
+    <img src="assets/bumi-1.jpg" alt="Bumi">
+    <span>Bumi 幫我選</span>
+  </button>
+  <div class="bumi-hint" id="bumiHint">先選一個縣市，Bumi 會從尚未造訪的地點中隨機挑選。</div>
+</div>
 <div id="loading">正在讀取 Google Sheet...</div>
 <div id="content"></div>
 <div id="mapShell">
@@ -122,6 +154,31 @@
     </div>
     <div id="mapStatus">切換到地圖後會依地址建立座標標記。</div>
     <button type="button" id="fitMapBtn">顯示目前篩選結果</button>
+  </div>
+</div>
+
+<div class="bumi-modal" id="bumiModal" hidden>
+  <div class="bumi-dialog" id="bumiDialog" role="dialog" aria-modal="true" aria-labelledby="bumiTitle">
+    <button type="button" class="bumi-close" id="bumiCloseBtn" aria-label="關閉">×</button>
+    <div class="bumi-stage">
+      <video class="bumi-stage-video" id="bumiPressVideo" muted playsinline preload="auto" poster="assets/bumi-ai-button-press-v4-poster.jpg" aria-label="Bumi 抬起前腳再按下紅色按鈕">
+        <source src="assets/bumi-ai-button-press-v4.mp4" type="video/mp4">
+      </video>
+    </div>
+    <div class="bumi-copy">
+      <h2 id="bumiTitle">Bumi 準備按按鈕</h2>
+      <p id="bumiMessage">她會從你選定縣市的未造訪地點中挑選。</p>
+      <div class="bumi-result" id="bumiResult" hidden>
+        <div class="bumi-result-name" id="bumiResultName"></div>
+        <div class="bumi-result-meta" id="bumiResultMeta"></div>
+        <div class="bumi-result-address" id="bumiResultAddress"></div>
+        <div class="bumi-actions">
+          <button type="button" class="primary" id="bumiShowMapBtn">在地圖上看</button>
+          <button type="button" id="bumiShowListBtn">看清單</button>
+          <button type="button" id="bumiAgainBtn">再選一次</button>
+        </div>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -141,9 +198,11 @@ let map;
 let markerLayer;
 let mapReady = false;
 let geocodeRunning = false;
+let bumiPicking = false;
+let bumiSelectedRow = null;
+let bumiLastSequence = null;
 const geocodeCacheKey = 'petlist-geocode-cache-v1';
 const geocodeCache = loadGeocodeCache();
-
 function countyIndex(county) {
   const index = COUNTY_ORDER.indexOf(county);
   return index === -1 ? COUNTY_ORDER.length : index;
@@ -195,6 +254,7 @@ fetch(URL_GVIZ)
     }).filter(row => row[FIELD.name]);
     await loadExternalGeocodeCache();
     populateCountyFilter(allRows);
+    updateBumiHint();
     render();
     document.getElementById('loading').style.display = 'none';
   })
@@ -422,13 +482,120 @@ function wait(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
 
+function getBumiCandidates() {
+  const county = document.getElementById('countyFilter').value;
+  if (!county) return { county: '', rows: [] };
+  const rows = allRows.filter(row =>
+    row[FIELD.county] === county &&
+    !(row[FIELD.visitDate] || '').toString().trim()
+  );
+  return { county, rows };
+}
+
+function updateBumiHint() {
+  const hint = document.getElementById('bumiHint');
+  const { county, rows } = getBumiCandidates();
+  hint.classList.remove('is-error');
+  hint.textContent = county
+    ? `${county}目前有 ${rows.length} 個尚未造訪地點可以抽選。`
+    : '先選一個縣市，Bumi 會從尚未造訪的地點中隨機挑選。';
+}
+
+async function startBumiPick() {
+  if (bumiPicking) return;
+  const { county, rows } = getBumiCandidates();
+  const hint = document.getElementById('bumiHint');
+  if (!county) {
+    hint.textContent = '請先從上方選擇縣市，再請 Bumi 幫你挑。';
+    hint.classList.add('is-error');
+    document.getElementById('countyFilter').focus();
+    return;
+  }
+  if (!rows.length) {
+    hint.textContent = `${county}沒有尚未造訪的地點。`;
+    hint.classList.add('is-error');
+    return;
+  }
+
+  bumiPicking = true;
+  bumiSelectedRow = null;
+  const modal = document.getElementById('bumiModal');
+  const dialog = document.getElementById('bumiDialog');
+  const video = document.getElementById('bumiPressVideo');
+  document.getElementById('bumiResult').hidden = true;
+  document.getElementById('bumiTitle').textContent = 'Bumi 正在按按鈕';
+  document.getElementById('bumiMessage').textContent = `從 ${county} 的 ${rows.length} 個未造訪地點中挑選...`;
+  modal.hidden = false;
+  dialog.classList.add('is-picking');
+
+  video.currentTime = 0;
+  const videoEnded = new Promise(resolve => video.addEventListener('ended', resolve, { once: true }));
+  try { await video.play(); } catch (error) {}
+  await Promise.race([videoEnded, wait(4500)]);
+  dialog.classList.remove('is-picking');
+
+  let pool = rows;
+  if (rows.length > 1 && bumiLastSequence !== null) {
+    pool = rows.filter(row => row[FIELD.seq] !== bumiLastSequence);
+  }
+  const selected = pool[Math.floor(Math.random() * pool.length)];
+  bumiLastSequence = selected[FIELD.seq];
+  bumiSelectedRow = selected;
+  document.getElementById('bumiTitle').textContent = 'Bumi 選好囉';
+  document.getElementById('bumiMessage').textContent = `${county}這次去這裡看看！`;
+  document.getElementById('bumiResultName').textContent = selected[FIELD.name] || '';
+  document.getElementById('bumiResultMeta').textContent = [
+    selected[FIELD.rating] ? `★ ${selected[FIELD.rating]}` : '',
+    selected[FIELD.category],
+    selected[FIELD.price]
+  ].filter(Boolean).join(' · ');
+  document.getElementById('bumiResultAddress').textContent = selected[FIELD.address] || '';
+  document.getElementById('bumiResult').hidden = false;
+  bumiPicking = false;
+}
+
+function closeBumiModal() {
+  if (bumiPicking) return;
+  document.getElementById('bumiModal').hidden = true;
+}
+
+function showBumiSelection(mode) {
+  if (!bumiSelectedRow) return;
+  document.getElementById('search').value = bumiSelectedRow[FIELD.name] || '';
+  document.getElementById('dateSearch').value = '';
+  document.getElementById('noteSearch').value = '';
+  document.getElementById('bumiModal').hidden = true;
+  if (map) map._petlistAlreadyFit = false;
+  setMode(mode);
+  if (mode === 'map') {
+    setTimeout(() => {
+      const layers = markerLayer ? markerLayer.getLayers() : [];
+      if (layers.length === 1) layers[0].openPopup();
+    }, 450);
+  } else {
+    setTimeout(() => document.getElementById('content').scrollIntoView({ behavior: 'smooth' }), 100);
+  }
+}
+
 document.getElementById('search').addEventListener('input', () => { if (map) map._petlistAlreadyFit = false; render(); });
 document.getElementById('dateSearch').addEventListener('input', render);
 document.getElementById('noteSearch').addEventListener('input', render);
-document.getElementById('countyFilter').addEventListener('change', () => { if (map) map._petlistAlreadyFit = false; render(); });
+document.getElementById('countyFilter').addEventListener('change', () => {
+  if (map) map._petlistAlreadyFit = false;
+  updateBumiHint();
+  render();
+});
 document.getElementById('listModeBtn').addEventListener('click', () => setMode('list'));
 document.getElementById('mapModeBtn').addEventListener('click', () => setMode('map'));
 document.getElementById('fitMapBtn').addEventListener('click', () => fitMapToMarkers(true));
+document.getElementById('bumiPickBtn').addEventListener('click', startBumiPick);
+document.getElementById('bumiCloseBtn').addEventListener('click', closeBumiModal);
+document.getElementById('bumiAgainBtn').addEventListener('click', startBumiPick);
+document.getElementById('bumiShowMapBtn').addEventListener('click', () => showBumiSelection('map'));
+document.getElementById('bumiShowListBtn').addEventListener('click', () => showBumiSelection('list'));
+document.getElementById('bumiModal').addEventListener('click', event => {
+  if (event.target.id === 'bumiModal') closeBumiModal();
+});
 </script>
 </body>
 </html>
