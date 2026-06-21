@@ -62,6 +62,11 @@
   .addr { margin-top: 5px; color: #7b847d; font-size: 12px; line-height: 1.5; }
   .extra { margin-top: 6px; color: #3c463f; font-size: 12px; line-height: 1.6; }
   .extra b { color: var(--green); }
+  .access-info { display: flex; flex-wrap: wrap; gap: 6px 14px; margin-top: 6px; font-size: 12px; }
+  .access-item b { color: var(--green); }
+  .access-value { font-weight: 800; }
+  .access-value.is-yes { color: #25813b; }
+  .access-value.is-no { color: #c7352d; }
   a.maplink { color: var(--green); text-decoration: none; font-size: 12px; font-weight: 600; }
   a.maplink:hover { text-decoration: underline; }
   #mapShell { position: relative; display: none; height: calc(100vh - 216px); min-height: 460px; }
@@ -189,7 +194,7 @@ const SHEET_ID = atob('MWxGeFF3V3U3OE0xaEE1Q2ZNNHJzMUFVSWw3MGhuZUhtMFJ2ZlNObWc2V
 const SHEET_NAME = 'pet_list_final';
 const URL_GVIZ = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(SHEET_NAME)}`;
 const COUNTY_ORDER = ['臺北市','新北市','基隆市','桃園市','新竹市','新竹縣','苗栗縣','臺中市','彰化縣','南投縣','雲林縣','嘉義市','嘉義縣','臺南市','高雄市','屏東縣','宜蘭縣','花蓮縣','臺東縣','澎湖縣','金門縣','連江縣'];
-const FIELD = { seq:'序號', name:'店名', rating:'評分', category:'類別', price:'價位', county:'縣市', visitDate:'造訪日期', note:'心得備註', photo:'照片連結', address:'地址', googleName:'Google Maps店名', googleUrl:'Google Maps網址' };
+const FIELD = { seq:'序號', name:'店名', rating:'評分', category:'類別', price:'價位', county:'縣市', visitDate:'造訪日期', note:'心得備註', stroller:'推車', leash:'牽繩', photo:'照片連結', address:'地址', googleName:'Google Maps店名', googleUrl:'Google Maps網址' };
 
 let allRows = [];
 let filteredRows = [];
@@ -210,6 +215,19 @@ function countyIndex(county) {
 
 function escapeHtml(value) {
   return (value || '').toString().replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function createAccessHtml(row) {
+  const items = [
+    ['推車', row[FIELD.stroller]],
+    ['牽繩', row[FIELD.leash]]
+  ].filter(([, value]) => value);
+  if (!items.length) return '';
+  return `<div class="access-info">${items.map(([label, value]) => {
+    const normalized = value.toString().trim().toUpperCase();
+    const stateClass = normalized === 'V' ? 'is-yes' : normalized === 'X' ? 'is-no' : '';
+    return `<span class="access-item"><b>${label}：</b><span class="access-value ${stateClass}">${escapeHtml(normalized)}</span></span>`;
+  }).join('')}</div>`;
 }
 
 function loadGeocodeCache() {
@@ -339,6 +357,7 @@ function createListItem(row) {
     <div class="meta">${meta.join(' · ')}</div>
     ${row[FIELD.address] ? `<div class="addr">${escapeHtml(row[FIELD.address])}</div>` : ''}
     ${row[FIELD.googleUrl] ? `<a class="maplink" href="${escapeHtml(row[FIELD.googleUrl])}" target="_blank" rel="noopener">開啟 Google Maps</a>` : ''}
+    ${createAccessHtml(row)}
     ${extra.length ? `<div class="extra">${extra.join('')}</div>` : ''}
   `;
   return item;
@@ -406,6 +425,7 @@ function createPopupHtml(row) {
     <div class="popup-meta">${meta}</div>
     <div class="popup-addr">${escapeHtml(row[FIELD.address] || '')}</div>
     ${maps}
+    ${createAccessHtml(row)}
     ${extra.length ? `<div class="popup-extra">${extra.join('')}</div>` : ''}
   `;
 }
